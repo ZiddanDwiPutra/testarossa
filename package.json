@@ -1,0 +1,18 @@
+{
+  "name": "testarossa",
+  "version": "1.0.0",
+  "description": "speed of light file test",
+  "main": "generator-test.js",
+  "bin": {
+    "testarossa": "./generator-test.js"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^8.3.0",
+    "fs-extra": "^10.0.0",
+    "pkg": "^5.8.1"
+  },
+  "scripts": {
+    "build": "pkg . --targets win --output testarossa.exe"
+  }
+}
