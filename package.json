@@ -2,9 +2,9 @@
   "name": "testarossa",
   "version": "1.0.0",
   "description": "speed of light file test",
-  "main": "generator-test.js",
+  "main": "testarossa.js",
   "bin": {
-    "testarossa": "./generator-test.js"
+    "testarossa": "./testarossa.js"
   },
   "dependencies": {
     "chalk": "^4.1.2",
