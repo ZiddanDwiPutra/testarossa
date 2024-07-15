@@ -8,6 +8,7 @@ program
   .version('1.0.0')
   .description('Generate test files for .tsx files in the src directory')
   .option('-d, --directory <type>', 'source directory', 'src')
+  .option('-ef, --endfix <type>', 'change endfix scanner', 'Page.tsx')
   .parse(process.argv);
 
 const options = program.opts();
@@ -51,15 +52,18 @@ describe('${componentName}', () => {
 
 async function findTsxFiles(dir) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
-  
+    const endfix = options.endfix || 'Page.tsx'
+    
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
-  
+      const name = toValidVariableName(path.basename(fullPath, '.tsx').replace('.component', ''));
+      
       if (entry.isDirectory()) {
         await findTsxFiles(fullPath);
       // } else if (entry.isFile() && fullPath.endsWith('Page.tsx') 
-      } else if (entry.isFile() && !fullPath.endsWith('.test.tsx') && !fullPath.includes('-')) 
+      } else if (entry.isFile() && !fullPath.endsWith('.test.tsx') && !name.includes('-') && fullPath.endsWith(endfix)) 
       {
+        console.log('writed')
         await createTestFile(fullPath);
       }
     }

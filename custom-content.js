@@ -32,7 +32,6 @@ describe('${componentName}', () => {
 `
 } 
 
-console.log("AAAA")
 
 module.exports = { 
     getContent    
