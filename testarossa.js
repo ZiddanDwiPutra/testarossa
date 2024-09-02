@@ -3,13 +3,14 @@ const path = require('path');
 const chalk = require('chalk');
 const { program } = require('commander');
 const { getContent } = require('./custom-content');
+const { Config } = require('./config');
 
 let counter = 0;
 program
   .version('1.0.0')
   .description('Generate test files for .tsx files in the src directory')
-  .option('-d, --directory <type>', 'source directory', 'src')
-  .option('-ef, --endfix <type>', 'change endfix scanner', 'Page.tsx')
+  .option('-d, --directory <type>', 'source directory', Config.default.targetFolder)
+  .option('-ef, --endfix <type>', 'change endfix scanner', Config.default.endfix)
   .parse(process.argv);
 
 const options = program.opts();
@@ -32,21 +33,21 @@ async function readFile(filePath) {
 }
 
 async function createTestFile(filePath) {
-  const testFilePath = filePath.replace(/\.tsx$/, '.test.tsx');
+  const testFilePath = filePath.replace(Config.default.componentFileExt, Config.default.testFileExt);
   const timerLabel = `Created test file: ${testFilePath}`;
   console.time(chalk.green(timerLabel));
   const dataRead = await readFile(filePath);
   
   if (await fs.pathExists(testFilePath)) return;
   
-  const componentName = toValidVariableName(path.basename(filePath, '.tsx').replace('.component', ''));
+  const componentName = toValidVariableName(path.basename(filePath, Config.default.componentFileExt).replace('.component', ''));
   const importPath = path.relative(path.dirname(testFilePath), filePath).replace(/\\/g, '/').replace(/^\.\.\//, './');
   
   //read export def
-  let textImportComp =  `import {${componentName}} from './${importPath.replace('.tsx', '')}'`;
-  if (dataRead.isExportDef) textImportComp = `import ${componentName} from './${importPath.replace('.tsx', '')}'`;
+  let textImportComp =  `import {${componentName}} from './${importPath.replace(Config.default.componentFileExt, '')}'`;
+  if (dataRead.isExportDef) textImportComp = `import ${componentName} from './${importPath.replace(Config.default.componentFileExt, '')}'`;
 
-  const content = getContent(componentName, importPath, dataRead) || `import { InitComponent } from "src/app/mocks/InitComponent"
+  let content = getContent(componentName, importPath, dataRead) || `import { InitComponent } from "src/app/mocks/InitComponent"
 import { render } from '@testing-library/react'
 ${textImportComp}
 
@@ -72,15 +73,15 @@ describe('${componentName}', () => {
 
 async function findTsxFiles(dir) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
-    const endfix = getOptionsValue('endfix', 'Page.tsx')
+    const endfix = getOptionsValue('endfix', Config.default.endfix)
     
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
-      const name = toValidVariableName(path.basename(fullPath, '.tsx').replace('.component', ''));
+      const name = toValidVariableName(path.basename(fullPath, Config.default.componentFileExt).replace('.component', ''));
       
       if (entry.isDirectory()) {
         await findTsxFiles(fullPath);
-      } else if (entry.isFile() && !fullPath.endsWith('.test.tsx') && !name.includes('-') && fullPath.endsWith(endfix)) 
+      } else if (entry.isFile() && !fullPath.endsWith(Config.default.testFileExt) && !name.includes('-') && fullPath.endsWith(endfix)) 
       {
         await createTestFile(fullPath);
       }
@@ -95,7 +96,7 @@ async function main() {
     if(counter === 0) {
       console.log(chalk.yellowBright('There is no file for generate'), chalk.yellow('on', srcDir));
       console.log(chalk.blue('please check the endfix file or target folder, run --help for another options.'))
-    }else console.log(chalk.blue('Test file generation complete.'), chalk.yellow('on', srcDir), counter);
+    }else console.log(chalk.blue('Test file generation complete.'), chalk.yellow('on', srcDir));
   } catch (error) {
     console.error(chalk.red(`Error: ${error.message}`));
   }
