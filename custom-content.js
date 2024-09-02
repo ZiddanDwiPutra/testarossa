@@ -1,4 +1,4 @@
-const getContent = (componentName, importPath) => {
+const getContent = (componentName, importPath, dataRead) => {
 return undefined;
 `
 import { InitComponent } from "src/app/mocks/InitComponent"

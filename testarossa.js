@@ -4,6 +4,7 @@ const chalk = require('chalk');
 const { program } = require('commander');
 const { getContent } = require('./custom-content');
 
+let counter = 0;
 program
   .version('1.0.0')
   .description('Generate test files for .tsx files in the src directory')
@@ -12,30 +13,48 @@ program
   .parse(process.argv);
 
 const options = program.opts();
-function toValidVariableName(name) {
-    return name.replace(/-([a-z])/g, (g) => g[1].toUpperCase()).replace(/-/g, '');
+function getOptionsValue(option, defaultValue) {
+  if(options[option]) return options[option];
+  else return defaultValue;
 }
+function toValidVariableName(name) {
+  return name.replace(/-([a-z])/g, (g) => g[1].toUpperCase()).replace(/-/g, '');
+}
+async function readFile(filePath) {
+  let isExportDef = false;
+  try{
+    await fs.readFile(filePath, "utf8", (err, data) => {
+      if (!err) isExportDef = data.includes('export default');
+    })
+  }catch(e) {}
+
+  return {isExportDef}
+}
+
 async function createTestFile(filePath) {
   const testFilePath = filePath.replace(/\.tsx$/, '.test.tsx');
   const timerLabel = `Created test file: ${testFilePath}`;
   console.time(chalk.green(timerLabel));
-  if (await fs.pathExists(testFilePath)) {
-    // console.log(chalk.yellow(`Test file already exists: ${testFilePath}`));
-    return;
-  }
-
+  const dataRead = await readFile(filePath);
+  
+  if (await fs.pathExists(testFilePath)) return;
+  
   const componentName = toValidVariableName(path.basename(filePath, '.tsx').replace('.component', ''));
   const importPath = path.relative(path.dirname(testFilePath), filePath).replace(/\\/g, '/').replace(/^\.\.\//, './');
+  
+  //read export def
+  let textImportComp =  `import {${componentName}} from './${importPath.replace('.tsx', '')}'`;
+  if (dataRead.isExportDef) textImportComp = `import ${componentName} from './${importPath.replace('.tsx', '')}'`;
 
-  const content = getContent(componentName, importPath) || `import { InitComponent } from "src/app/mocks/InitComponent"
+  const content = getContent(componentName, importPath, dataRead) || `import { InitComponent } from "src/app/mocks/InitComponent"
 import { render } from '@testing-library/react'
-import {${componentName}} from './${importPath.replace('.tsx', '')}'
+${textImportComp}
 
 describe('${componentName}', () => {
   describe('render page', () => {
     const Component = (
       <InitComponent
-        path={['/']}
+        path={[{pathname: '/', state: {}}]}
         children={<${componentName} {...{} as any} />}
       />
     );
@@ -48,11 +67,12 @@ describe('${componentName}', () => {
 
   await fs.outputFile(testFilePath, content);
   console.timeEnd(chalk.green(timerLabel));
+  counter++;
 }
 
 async function findTsxFiles(dir) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
-    const endfix = options.endfix || 'Page.tsx'
+    const endfix = getOptionsValue('endfix', 'Page.tsx')
     
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
@@ -60,10 +80,8 @@ async function findTsxFiles(dir) {
       
       if (entry.isDirectory()) {
         await findTsxFiles(fullPath);
-      // } else if (entry.isFile() && fullPath.endsWith('Page.tsx') 
       } else if (entry.isFile() && !fullPath.endsWith('.test.tsx') && !name.includes('-') && fullPath.endsWith(endfix)) 
       {
-        console.log('writed')
         await createTestFile(fullPath);
       }
     }
@@ -73,7 +91,11 @@ async function main() {
   try {
     const srcDir = path.resolve(options.directory);
     await findTsxFiles(srcDir);
-    console.log(chalk.blue('Test file generation complete.'));
+    console.log('---------end-----------')
+    if(counter === 0) {
+      console.log(chalk.yellowBright('There is no file for generate'), chalk.yellow('on', srcDir));
+      console.log(chalk.blue('please check the endfix file or target folder, run --help for another options.'))
+    }else console.log(chalk.blue('Test file generation complete.'), chalk.yellow('on', srcDir), counter);
   } catch (error) {
     console.error(chalk.red(`Error: ${error.message}`));
   }
