@@ -22,7 +22,7 @@ function toValidVariableName(name) {
   return name.replace(/-([a-z])/g, (g) => g[1].toUpperCase()).replace(/-/g, '');
 }
 async function readFile(filePath) {
-  let isExportDef = false;
+  let isExportDef = true;
   try{
     await fs.readFile(filePath, "utf8", (err, data) => {
       if (!err) isExportDef = data.includes('export default');
