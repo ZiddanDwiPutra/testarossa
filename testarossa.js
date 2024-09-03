@@ -1,4 +1,5 @@
 const fs = require('fs-extra');
+const fsPromise = require('node:fs/promises');
 const path = require('path');
 const chalk = require('chalk');
 const { program } = require('commander');
@@ -22,11 +23,10 @@ function toValidVariableName(name) {
   return name.replace(/-([a-z])/g, (g) => g[1].toUpperCase()).replace(/-/g, '');
 }
 async function readFile(filePath) {
-  let isExportDef = true;
+  let isExportDef = false;
   try{
-    await fs.readFile(filePath, "utf8", (err, data) => {
-      if (!err) isExportDef = data.includes('export default');
-    })
+    const data = await fsPromise.readFile(filePath, "utf8")
+    if (data) isExportDef = data.includes('export default');
   }catch(e) {}
 
   return {isExportDef}
