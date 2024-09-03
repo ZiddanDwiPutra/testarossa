@@ -55,7 +55,7 @@ describe('${componentName}', () => {
   describe('render page', () => {
     const Component = (
       <InitComponent
-        path={[{pathname: '/', state: {}}]}
+        path={['/']}
         children={<${componentName} {...{} as any} />}
       />
     );
