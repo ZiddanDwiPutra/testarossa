@@ -8,7 +8,7 @@ const { Config } = require('./config');
 
 let counter = 0;
 program
-  .version('1.0.0')
+  .version('1.1.0')
   .description('Generate test files for .tsx files in the src directory')
   .option('-d, --directory <type>', 'source directory', Config.default.targetFolder)
   .option('-ef, --endfix <type>', 'change endfix scanner', Config.default.endfix)
